@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Marc Hill</title>
+    <link rel="stylesheet" href="style.css">
+    
+</head>
+<body>
+    <div id="content">
+        <nav id="topNav"><span class="nav-name">Marc Hill, <br>Design Director</span><div class="nav-links"><a href="#" id="aboutLink">About</a><a href="#" id="workLink">Work</a></div></nav>
+
+          <div class="Music"></div>
+           <div class="Social">
+
+    <div>Instagram <span class="arrow">↗</span></div>
+    <div>Instagram <span class="arrow">↗</span></div>
+    <div>Instagram <span class="arrow">↗</span></div>
+
+
+ </div>
+  <div class="now">
+    <div class="title">Now</div>
+     <div>Play Studio <span class="sub_title">Design Director</span></div>
+ </div>
+ <div class="Past" style="margin-top:18px">
+    <div class="title">Past</div>
+     <div>Play Studio <span class="sub_title">Design Director</span></div>
+      <div>Play Studio <span class="sub_title">Design Director</span></div>
+       <div>Play Studio <span class="sub_title">Design Director</span></div>
+        <div>Play Studio <span class="sub_title">Design Director</span></div>
+         <div>Play Studio <span class="sub_title">Design Director</span></div>
+          <div>Play Studio <span class="sub_title">Design Director</span></div>
+ </div>
+  <div style="margin-top:18px">
+    <div class="title">Press</div>
+    <div class="Press"></div>
+ </div>
+  
+ </div>
+    </div>
+    <canvas id="game"></canvas>
+    <button id="toggleBtn">Start</button>
+
+    <!-- Work Modal -->
+    <div id="workModal">
+        <div id="workModalContent">
+            <button id="workModalClose">Close</button>
+            <div id="workModalText"></div>
+            <div id="workModalClients">
+                <h3>Clients</h3>
+                <div class="clients-list" id="clientsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Page -->
+    <div id="aboutPage">
+        <button id="aboutClose">Close</button>
+        <div id="aboutSentence"></div>
+        <button id="aboutToggleBtn">Start</button>
+        <button id="aboutResetBtn">Reset</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('game');
+        const ctx = canvas.getContext('2d');
+        const toggleBtn = document.getElementById('toggleBtn');
+        const contentDiv = document.getElementById('content');
+        const workModal = document.getElementById('workModal');
+        const workModalClose = document.getElementById('workModalClose');
+        const workModalText = document.getElementById('workModalText');
+        const clientsList = document.getElementById('clientsList');
+        const aboutPage = document.getElementById('aboutPage');
+        const aboutClose = document.getElementById('aboutClose');
+        const aboutSentence = document.getElementById('aboutSentence');
+        const aboutToggleBtn = document.getElementById('aboutToggleBtn');
+        const aboutResetBtn = document.getElementById('aboutResetBtn');
+
+        // Store sentences from sheet
+        let sentences = [];
+        let aboutMode = false;
+        let aboutBricks = [];
+        let originalAboutBricks = [];
+        let currentSentence = '';
+
+        // Work modal toggle
+        function openWorkModal() {
+            workModal.classList.add('active');
+        }
+        function closeWorkModal() {
+            workModal.classList.remove('active');
+        }
+        workModalClose.addEventListener('click', closeWorkModal);
+        workModal.addEventListener('click', (e) => {
+            if (e.target === workModal) closeWorkModal();
+        });
+
+        // About page toggle
+        function openAboutPage() {
+            aboutMode = true;
+            // Pick random sentence
+            if (sentences.length > 0) {
+                const randomIndex = Math.floor(Math.random() * sentences.length);
+                currentSentence = sentences[randomIndex];
+                aboutSentence.textContent = currentSentence;
+                createAboutBricks(currentSentence);
+            }
+            aboutPage.classList.add('active');
+            contentDiv.classList.add('hidden');
+            toggleBtn.style.display = 'none';
+        }
+        function closeAboutPage() {
+            // Stop game if running
+            if (gameMode) {
+                gameMode = false;
+                canvas.classList.remove('active');
+                canvas.style.zIndex = '';
+                document.body.style.overflow = 'auto';
+                document.body.style.touchAction = 'auto';
+            }
+            aboutMode = false;
+            aboutSentence.style.display = 'block';
+            aboutToggleBtn.style.display = 'block';
+            aboutToggleBtn.textContent = 'Start';
+            aboutToggleBtn.classList.remove('game-active');
+            aboutResetBtn.style.display = 'none';
+            aboutPage.classList.remove('active');
+            contentDiv.classList.remove('hidden');
+            toggleBtn.style.display = 'block';
+        }
+        aboutClose.addEventListener('click', closeAboutPage);
+
+        // Create bricks from sentence for about page
+        function createAboutBricks(sentence) {
+            aboutBricks = [];
+            const words = sentence.split(' ');
+            const charWidth = 14;
+            const lineHeight = 35;
+
+            // Center the text
+            const totalWidth = sentence.length * charWidth;
+            const startX = (canvas.width - Math.min(totalWidth, canvas.width * 0.6)) / 2;
+            const startY = canvas.height / 2 - (words.length * lineHeight) / 2;
+
+            let xOffset = startX;
+            let yOffset = startY;
+            const maxWidth = canvas.width * 0.6;
+
+            words.forEach(word => {
+                const wordWidth = word.length * charWidth;
+
+                // Wrap to next line if needed
+                if (xOffset + wordWidth > startX + maxWidth && xOffset !== startX) {
+                    xOffset = startX;
+                    yOffset += lineHeight;
+                }
+
+                for (let char of word) {
+                    aboutBricks.push({
+                        x: xOffset,
+                        y: yOffset,
+                        width: charWidth,
+                        height: 20,
+                        char: char,
+                        isHeader: true,
+                        alive: true
+                    });
+                    xOffset += charWidth;
+                }
+                xOffset += charWidth; // space between words
+            });
+
+            originalAboutBricks = JSON.parse(JSON.stringify(aboutBricks));
+        }
+
+        // About page game start/stop toggle
+        function toggleAboutGame() {
+            gameMode = !gameMode;
+            if (gameMode) {
+                aboutToggleBtn.textContent = 'Stop';
+                aboutToggleBtn.classList.add('game-active');
+                aboutResetBtn.style.display = 'block';
+                aboutSentence.style.display = 'none';
+                canvas.classList.add('active');
+                canvas.style.zIndex = '60';
+                document.body.style.overflow = 'hidden';
+                document.body.style.touchAction = 'none';
+                fallingPieces = [];
+                aboutBricks = JSON.parse(JSON.stringify(originalAboutBricks));
+                resetBall();
+                resetPaddle();
+            } else {
+                aboutToggleBtn.textContent = 'Start';
+                aboutToggleBtn.classList.remove('game-active');
+                aboutResetBtn.style.display = 'none';
+                aboutSentence.style.display = 'block';
+                canvas.classList.remove('active');
+                canvas.style.zIndex = '';
+                document.body.style.overflow = 'auto';
+                document.body.style.touchAction = 'auto';
+            }
+        }
+
+        // About page game reset
+        function resetAboutGame() {
+            fallingPieces = [];
+            aboutBricks = JSON.parse(JSON.stringify(originalAboutBricks));
+            resetBall();
+            resetPaddle();
+        }
+
+        aboutToggleBtn.addEventListener('click', toggleAboutGame);
+        aboutResetBtn.addEventListener('click', resetAboutGame);
+
+        // Sheet URL
+        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSgvoRmyA222NmQ430O4EgKHK36ExJgp1FwR3869UIKMSuB5z6BhGi5qBW0NpZ3pHfWWVbeHbImvJVn/pub?output=csv';
+
+        // Game state
+        let gameMode = false;
+        let bricks = [];
+        let originalBricks = [];
+        let fallingPieces = [];
+        let sheetData = null;
+        let ball, paddle;
+
+        // Paddle
+        paddle = {
+            width: 120,
+            height: 15,
+            x: 0,
+            y: 0
+        };
+
+        // Ball - slower speed
+        ball = {
+            x: 0,
+            y: 0,
+            radius: 8,
+            dx: 2.5,
+            dy: -2.5,
+            speed: 2.5
+        };
+
+        // Resize canvas to full screen
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            resetPaddle();
+            // Recreate bricks with new dimensions
+            if (sheetData) {
+                createBricks();
+            }
+            // Recreate about bricks if on about page
+            if (aboutMode && currentSentence) {
+                createAboutBricks(currentSentence);
+            }
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height - 100;
+            ball.dx = (Math.random() > 0.5 ? 1 : -1) * ball.speed;
+            ball.dy = -ball.speed;
+        }
+
+        function resetPaddle() {
+            paddle.x = canvas.width / 2 - paddle.width / 2;
+            paddle.y = canvas.height - 60;
+        }
+
+        // Toggle game mode
+        function toggleGame() {
+            gameMode = !gameMode;
+            if (gameMode) {
+                // Start game
+                toggleBtn.textContent = 'Reset';
+                canvas.classList.add('active');
+                contentDiv.classList.add('hidden');
+                document.body.style.overflow = 'hidden';
+                document.body.style.touchAction = 'none';
+                fallingPieces = [];
+                bricks = JSON.parse(JSON.stringify(originalBricks));
+                resetBall();
+                resetPaddle();
+            } else {
+                // Stop game, show content
+                toggleBtn.textContent = 'Start';
+                canvas.classList.remove('active');
+                contentDiv.classList.remove('hidden');
+                document.body.style.overflow = 'auto';
+                document.body.style.touchAction = 'auto';
+            }
+        }
+
+        toggleBtn.addEventListener('click', toggleGame);
+
+        // Parse CSV
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split('\n');
+            const result = [];
+            for (let line of lines) {
+                const row = [];
+                let cell = '';
+                let inQuotes = false;
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"') {
+                        if (inQuotes && line[i + 1] === '"') {
+                            cell += '"';
+                            i++;
+                        } else {
+                            inQuotes = !inQuotes;
+                        }
+                    } else if (char === ',' && !inQuotes) {
+                        row.push(cell.trim());
+                        cell = '';
+                    } else {
+                        cell += char;
+                    }
+                }
+                row.push(cell.trim());
+                result.push(row);
+            }
+            return result;
+        }
+
+        // Render HTML content with links
+        function renderContent(data) {
+            const headers = data[0];
+            const rows = data.slice(1);
+
+            // Find URL columns
+            const urlColumns = {};
+            headers.forEach((header, index) => {
+                if (header.endsWith('_URL')) {
+                    const baseHeader = header.replace('_URL', '');
+                    const baseIndex = headers.indexOf(baseHeader);
+                    if (baseIndex !== -1) {
+                        urlColumns[baseIndex] = index;
+                    }
+                }
+            });
+
+            // Find Work_text column and populate modal
+            const workTextIndex = headers.indexOf('Work_text');
+            if (workTextIndex !== -1 && rows[0] && rows[0][workTextIndex]) {
+                workModalText.textContent = rows[0][workTextIndex];
+            }
+
+            // Find Clients column and populate modal
+            const clientsIndex = headers.indexOf('Clients');
+            if (clientsIndex !== -1) {
+                let clientsHtml = '';
+                rows.forEach(row => {
+                    const client = row[clientsIndex];
+                    if (client && client.trim()) {
+                        clientsHtml += `<span>${client}</span>`;
+                    }
+                });
+                clientsList.innerHTML = clientsHtml;
+            }
+
+            // Find Sentences column and store for about page
+            const sentencesIndex = headers.indexOf('Sentences');
+            if (sentencesIndex !== -1) {
+                sentences = [];
+                rows.forEach(row => {
+                    const sentence = row[sentencesIndex];
+                    if (sentence && sentence.trim()) {
+                        sentences.push(sentence);
+                    }
+                });
+            }
+
+            // Populate Music section
+            const musicIndex = headers.indexOf('Music');
+            const musicDiv = document.querySelector('.Music');
+            if (musicIndex !== -1 && musicDiv) {
+                let musicHtml = '<ul style="list-style:none;padding:0;margin:0;">';
+                const musicUrlIndex = urlColumns[musicIndex];
+                rows.forEach(row => {
+                    const text = row[musicIndex];
+                    if (text && text.trim()) {
+                        const url = musicUrlIndex !== undefined ? row[musicUrlIndex] : null;
+                        if (url && url.trim()) {
+                            musicHtml += `<li><a href="${url}" target="_blank"><span class="cd">💿</span> ${text}</a></li>`;
+                        } else {
+                            musicHtml += `<li>${text}</li>`;
+                        }
+                    }
+                });
+                musicHtml += '</ul>';
+                musicDiv.innerHTML = musicHtml;
+            }
+
+            // Populate Press section
+            const pressIndex = headers.indexOf('Press');
+            const pressDiv = document.querySelector('.Press');
+            if (pressIndex !== -1 && pressDiv) {
+                let pressHtml = '';
+                const pressUrlIndex = urlColumns[pressIndex];
+                rows.forEach(row => {
+                    const text = row[pressIndex];
+                    if (text && text.trim()) {
+                        const url = pressUrlIndex !== undefined ? row[pressUrlIndex] : null;
+                        if (url && url.trim()) {
+                            pressHtml += `<div><a href="${url}" target="_blank">${text} <span class="arrow">↗</span></a></div>`;
+                        } else {
+                            pressHtml += `<div>${text}</div>`;
+                        }
+                    }
+                });
+                pressHtml += '';
+                pressDiv.innerHTML = pressHtml;
+            }
+
+            // Add event listeners for About and Work links
+            document.getElementById('workLink').addEventListener('click', (e) => {
+                e.preventDefault();
+                openWorkModal();
+            });
+            document.getElementById('aboutLink').addEventListener('click', (e) => {
+                e.preventDefault();
+                openAboutPage();
+            });
+        }
+
+        // Create bricks from actual DOM elements
+        function createBricks() {
+            bricks = [];
+            const charWidth = 10;
+            const charHeight = 18;
+
+            // Get all text nodes from content div
+            function getTextNodesWithPosition(element) {
+                const walker = document.createTreeWalker(
+                    element,
+                    NodeFilter.SHOW_TEXT,
+                    null,
+                    false
+                );
+
+                const textNodes = [];
+                let node;
+                while (node = walker.nextNode()) {
+                    const text = node.textContent.trim();
+                    if (text && text.length > 0) {
+                        const range = document.createRange();
+                        range.selectNodeContents(node);
+                        const rects = range.getClientRects();
+
+                        for (let rect of rects) {
+                            if (rect.width > 0 && rect.height > 0) {
+                                textNodes.push({
+                                    text: node.textContent,
+                                    x: rect.left,
+                                    y: rect.top,
+                                    width: rect.width,
+                                    height: rect.height
+                                });
+                            }
+                        }
+                    }
+                }
+                return textNodes;
+            }
+
+            const textNodes = getTextNodesWithPosition(contentDiv);
+
+            textNodes.forEach(node => {
+                let xOffset = node.x;
+                const avgCharWidth = node.width / node.text.length;
+
+                for (let char of node.text) {
+                    if (char !== ' ' && char.trim()) {
+                        bricks.push({
+                            x: xOffset,
+                            y: node.y,
+                            width: avgCharWidth,
+                            height: node.height,
+                            char: char,
+                            isHeader: false,
+                            alive: true
+                        });
+                    }
+                    xOffset += avgCharWidth;
+                }
+            });
+
+            originalBricks = JSON.parse(JSON.stringify(bricks));
+        }
+
+        // Load sheet data
+        async function loadSheet() {
+            try {
+                const response = await fetch(SHEET_URL);
+                const csvText = await response.text();
+                sheetData = parseCSV(csvText);
+                renderContent(sheetData);
+                createBricks();
+            } catch (error) {
+                console.error('Error loading sheet:', error);
+                contentDiv.innerHTML = '<p>Error loading content</p>';
+            }
+        }
+
+        // Mouse/touch control
+        let mouseX = canvas.width / 2;
+
+        canvas.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            mouseX = e.touches[0].clientX;
+        }, { passive: false });
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            mouseX = e.touches[0].clientX;
+        }, { passive: false });
+
+        // Collision detection
+        function rectCollision(ball, brick) {
+            return ball.x + ball.radius > brick.x &&
+                   ball.x - ball.radius < brick.x + brick.width &&
+                   ball.y + ball.radius > brick.y &&
+                   ball.y - ball.radius < brick.y + brick.height;
+        }
+
+        // Create falling piece
+        function createFallingPiece(brick) {
+            fallingPieces.push({
+                x: brick.x,
+                y: brick.y,
+                char: brick.char,
+                isHeader: brick.isHeader,
+                vy: Math.random() * 2 + 1,
+                vx: (Math.random() - 0.5) * 3,
+                rotation: 0,
+                rotationSpeed: (Math.random() - 0.5) * 0.2,
+                alpha: 1
+            });
+        }
+
+        // Update game
+        function update() {
+            if (!gameMode) return;
+
+            // Move paddle towards mouse
+            const targetX = mouseX - paddle.width / 2;
+            paddle.x += (targetX - paddle.x) * 0.15;
+
+            // Keep paddle in bounds
+            if (paddle.x < 0) paddle.x = 0;
+            if (paddle.x + paddle.width > canvas.width) paddle.x = canvas.width - paddle.width;
+
+            // Move ball
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            // Ball wall collision
+            if (ball.x - ball.radius < 0 || ball.x + ball.radius > canvas.width) {
+                ball.dx = -ball.dx;
+            }
+            if (ball.y - ball.radius < 0) {
+                ball.dy = -ball.dy;
+            }
+
+            // Ball paddle collision
+            if (ball.y + ball.radius > paddle.y &&
+                ball.y - ball.radius < paddle.y + paddle.height &&
+                ball.x > paddle.x &&
+                ball.x < paddle.x + paddle.width) {
+                ball.dy = -Math.abs(ball.dy);
+                const hitPos = (ball.x - paddle.x) / paddle.width;
+                ball.dx = ball.speed * (hitPos - 0.5) * 2;
+            }
+
+            // Ball out of bounds - reset ball
+            if (ball.y > canvas.height + 50) {
+                resetBall();
+            }
+
+            // Ball brick collision - use aboutBricks if in about mode
+            const currentBricks = aboutMode ? aboutBricks : bricks;
+            currentBricks.forEach(brick => {
+                if (brick.alive && rectCollision(ball, brick)) {
+                    brick.alive = false;
+                    createFallingPiece(brick);
+
+                    const overlapLeft = ball.x + ball.radius - brick.x;
+                    const overlapRight = brick.x + brick.width - (ball.x - ball.radius);
+                    const overlapTop = ball.y + ball.radius - brick.y;
+                    const overlapBottom = brick.y + brick.height - (ball.y - ball.radius);
+
+                    const minOverlapX = Math.min(overlapLeft, overlapRight);
+                    const minOverlapY = Math.min(overlapTop, overlapBottom);
+
+                    if (minOverlapX < minOverlapY) {
+                        ball.dx = -ball.dx;
+                    } else {
+                        ball.dy = -ball.dy;
+                    }
+                }
+            });
+
+            // Update falling pieces
+            fallingPieces.forEach(piece => {
+                piece.x += piece.vx;
+                piece.y += piece.vy;
+                piece.vy += 0.15;
+                piece.rotation += piece.rotationSpeed;
+                piece.alpha -= 0.008;
+            });
+
+            fallingPieces = fallingPieces.filter(p => p.alpha > 0);
+        }
+
+        // Draw game
+        function draw() {
+            if (!gameMode) return;
+
+            // Different colors for about mode (white bg, black text) vs normal (black bg, white text)
+            const bgColor = aboutMode ? '#fff' : '#000';
+            const textColor = aboutMode ? '#000' : '#fff';
+            const secondaryColor = aboutMode ? '#666' : '#888';
+
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw bricks (letters) - use aboutBricks if in about mode
+            const currentBricks = aboutMode ? aboutBricks : bricks;
+            ctx.font = '18px Arial, Helvetica, sans-serif';
+            currentBricks.forEach(brick => {
+                if (brick.alive) {
+                    ctx.fillStyle = textColor;
+                    ctx.fillText(brick.char, brick.x, brick.y + brick.height * 0.8);
+                }
+            });
+
+            // Draw falling pieces
+            fallingPieces.forEach(piece => {
+                ctx.save();
+                ctx.translate(piece.x + 5, piece.y + 10);
+                ctx.rotate(piece.rotation);
+                ctx.globalAlpha = piece.alpha;
+                ctx.fillStyle = textColor;
+                ctx.fillText(piece.char, -5, 6);
+                ctx.restore();
+            });
+
+            ctx.globalAlpha = 1;
+
+            // Draw paddle
+            ctx.fillStyle = textColor;
+            ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+
+            // Draw ball
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = textColor;
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        // Game loop
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Initialize
+        loadSheet().then(() => {
+            resetPaddle();
+            resetBall();
+            gameLoop();
+        });
+    </script>
+</body>
+</html>
