@@ -39,7 +39,7 @@
             <span><a href="index.html" class="text-[#808080]">Marc Hill,</a></span>
         </div>
 
-          <div class="flex gap-4 absolute top-4 right-4 md:static md:justify-end text-[#808080]">
+          <div class="flex gap-4 absolute top-8 right-4 md:static md:justify-end text-[#808080]">
             <span>About</span>
             <span id="workBtn" class="cursor-pointer">Work</span>
         </div>
@@ -70,11 +70,10 @@
 
     <div id="bouncer"></div>
 
-    <button id="refresh" class="fixed bottom-4 left-4 text-[30px] cursor-pointer text-[#808080]">⟳</button>
-
+  
     <!-- Game elements -->
-    <div id="ball" class="fixed text-white text-[20px] pointer-events-none hidden">■</div>
-    <div id="paddle" class="fixed bottom-8 text-white text-[20px] pointer-events-none hidden">████████</div>
+    <div id="ball" class="fixed pointer-events-none hidden" style="width:6px;height:6px;background:#00D4DF;"></div>
+    <div id="paddle" class="fixed bottom-8 pointer-events-none hidden" style="width:80px;height:3px;background:white;opacity:0.5;"></div>
 
     <script>
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQIXomht2WJYoDI6jozjeGsoIROOUdRDZ1drTClymzLfb-S9WUReyObnVMTL9jNNU2xru7qY_vDoDUF/pub?output=csv';

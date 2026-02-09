@@ -18,7 +18,7 @@
     </script>
 <link rel="stylesheet" href="style.css">
 </head>
-<body class="text-white min-h-screen">
+<body class="text-white h-screen overflow-hidden">
     <div class="relative flex flex-col md:grid md:grid-flow-col md:auto-cols-auto p-8 gap-8">
         <div class="flex flex-col gap-0 leading-tight">
             <span>Marc Hill,</span>
@@ -53,7 +53,7 @@
         </div>
     </div>
 
-    <button id="refresh" class="fixed bottom-4 left-4 text-[30px] cursor-pointer">⟳</button>
+    <button id="refresh" class="fixed bottom-4 left-4 text-[30px] cursor-pointer hidden">⟳</button>
 
     <!-- Work Popup -->
     <div id="workPopup" class="fixed top-0 right-0 w-[310px] bg-white text-black p-8 hidden flex flex-col gap-2">
@@ -79,8 +79,14 @@
     </div>
 
     <!-- Game elements -->
-    <div id="ball" class="fixed text-white text-[20px] pointer-events-none hidden">■</div>
-    <div id="paddle" class="fixed bottom-8 text-white text-[20px] pointer-events-none hidden">████████</div>
+    <!-- Click to start -->
+    <div id="startPrompt" class="fixed inset-0 flex items-end md:items-center justify-center pointer-events-none pb-[80px] md:pb-0">
+        <span class="text-white opacity-50 cursor-pointer pointer-events-auto">Click to start</span>
+    </div>
+
+    <!-- Game elements -->
+    <div id="ball" class="fixed pointer-events-none" style="width:6px;height:6px;background:#00D4DF;"></div>
+    <div id="paddle" class="fixed bottom-8 pointer-events-none" style="width:80px;height:3px;background:white;opacity:0.5;"></div>
 
     <script>
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQIXomht2WJYoDI6jozjeGsoIROOUdRDZ1drTClymzLfb-S9WUReyObnVMTL9jNNU2xru7qY_vDoDUF/pub?output=csv';
@@ -180,14 +186,26 @@
         const ball = document.getElementById('ball');
         const paddle = document.getElementById('paddle');
         const refreshBtn = document.getElementById('refresh');
+        const startPrompt = document.getElementById('startPrompt');
+
+        const BALL_COLORS = ['#00D4DF','#BD4BFF','#393DFF','#88FF63','#FFA21F','#FF5A39','#FF7CDE','#FF5275'];
+        let ballColorIndex = 0;
 
         let gameRunning = false;
         let ballX, ballY, ballDX, ballDY;
-        let paddleX;
+        let paddleX = window.innerWidth / 2 - 40;
         const ballSpeed = 4;
         let charElements = [];
         let fallingChars = [];
         let originalHTML = '';
+
+        // Landing state: paddle + ball visible, following mouse
+        function updateLandingPosition() {
+            paddle.style.left = paddleX + 'px';
+            ball.style.left = (paddleX + 37) + 'px';
+            ball.style.top = (window.innerHeight - 32 - 6 - 14) + 'px';
+        }
+        updateLandingPosition();
 
         // Split text into individual character spans
         function splitTextIntoChars() {
@@ -273,34 +291,42 @@
 
         function startGame() {
             gameRunning = true;
-            ball.classList.remove('hidden');
-            paddle.classList.remove('hidden');
+            startPrompt.classList.add('hidden');
+            refreshBtn.classList.remove('hidden');
             fallingChars = [];
 
             splitTextIntoChars();
 
-            // Initial ball position - randomize direction
-            ballX = window.innerWidth / 2;
-            ballY = window.innerHeight - 150;
-            const angle = Math.random() * Math.PI - Math.PI / 2; // -90 to 90 degrees (upward)
+            // Launch ball from paddle position
+            ballX = paddleX + 37;
+            ballY = window.innerHeight - 32 - 6;
+            const angle = Math.random() * Math.PI - Math.PI / 2;
             ballDX = Math.sin(angle) * ballSpeed;
             ballDY = -Math.abs(Math.cos(angle) * ballSpeed);
 
-            // Initial paddle position
-            paddleX = window.innerWidth / 2 - 60;
+            ballColorIndex = 0;
+            ball.style.background = BALL_COLORS[0];
 
             gameLoop();
         }
 
         function stopGame() {
             gameRunning = false;
-            ball.classList.add('hidden');
-            paddle.classList.add('hidden');
+            refreshBtn.classList.add('hidden');
+            startPrompt.classList.remove('hidden');
 
             // Restore original HTML
             const content = document.querySelector('body > div');
             content.innerHTML = originalHTML;
+
+            // Clean up falling chars
+            fallingChars.forEach(f => f.el.remove());
             fallingChars = [];
+
+            // Reset ball to sit on paddle
+            ballColorIndex = 0;
+            ball.style.background = BALL_COLORS[0];
+            updateLandingPosition();
         }
 
         function gameLoop() {
@@ -333,6 +359,8 @@
                 ballDY = -ballDY;
                 const hitPos = (ballX - paddleX) / paddleRect.width;
                 ballDX = ballSpeed * (hitPos - 0.5) * 2;
+                ballColorIndex = (ballColorIndex + 1) % BALL_COLORS.length;
+                ball.style.background = BALL_COLORS[ballColorIndex];
             }
 
             // Check collision with character elements
@@ -350,6 +378,8 @@
                 ) {
                     makeCharFall(el);
                     ballDY = -ballDY;
+                    ballColorIndex = (ballColorIndex + 1) % BALL_COLORS.length;
+                    ball.style.background = BALL_COLORS[ballColorIndex];
                 }
             });
 
@@ -364,27 +394,32 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // Paddle follows mouse
+        // Paddle follows mouse (both landing and game states)
         document.addEventListener('mousemove', (e) => {
-            if (gameRunning) {
-                paddleX = e.clientX - 60;
+            paddleX = e.clientX - 40;
+            if (!gameRunning) {
+                updateLandingPosition();
             }
         });
 
         // Touch support
         document.addEventListener('touchmove', (e) => {
-            if (gameRunning) {
-                paddleX = e.touches[0].clientX - 60;
+            paddleX = e.touches[0].clientX - 40;
+            if (!gameRunning) {
+                updateLandingPosition();
             }
         });
 
-        // Toggle game with refresh button
-        refreshBtn.addEventListener('click', () => {
-            if (gameRunning) {
-                stopGame();
-            } else {
+        // Click anywhere to start game (landing state)
+        document.addEventListener('click', (e) => {
+            if (!gameRunning && !e.target.closest('a') && !e.target.closest('#workBtn') && !e.target.closest('#workPopup') && !e.target.closest('#refresh')) {
                 startGame();
             }
+        });
+
+        // Refresh button resets to landing
+        refreshBtn.addEventListener('click', () => {
+            stopGame();
         });
     </script>
 </body>
