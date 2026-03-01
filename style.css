@@ -17,6 +17,15 @@ font-weight: 500;
     box-sizing: border-box;
 }
 
+a {
+    opacity: 1;
+    transition: opacity 0.2s ease;
+}
+
+a:hover {
+    opacity: 0.5;
+}
+
 body {
     font-family: 'Selecta', sans-serif;
     background-color: black;
@@ -25,14 +34,22 @@ body {
 .cd {
     display: inline-block;
     animation: spin 5s linear infinite;
-    transform-origin: center center;
-    line-height: -0.9;
-    vertical-align: middle;
+    transform-origin: 50% 43%;
+    line-height: 1;
 }
 
 @keyframes spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
+}
+
+.ball-blink {
+    animation: blink 1s ease-in-out infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
 }
 
 .marquee {

@@ -56,7 +56,7 @@
     <button id="refresh" class="fixed bottom-4 left-4 text-[30px] cursor-pointer hidden">⟳</button>
 
     <!-- Work Popup -->
-    <div id="workPopup" class="fixed top-0 right-0 w-[310px] bg-white text-black p-8 hidden flex flex-col gap-2">
+    <div id="workPopup" class="fixed top-0 right-0 w-[310px] bg-white text-black p-8 flex-col gap-2" style="display:none">
         <div class="flex justify-end">
             <span id="workClose" class="cursor-pointer">Close</span>
         </div>
@@ -80,12 +80,12 @@
 
     <!-- Game elements -->
     <!-- Click to start -->
-    <div id="startPrompt" class="fixed inset-0 flex items-end md:items-center justify-center pointer-events-none pb-[80px] md:pb-0">
-        <span class="text-white opacity-50 cursor-pointer pointer-events-auto">Click to start</span>
+    <div id="gameOver" class="fixed inset-0 flex items-center justify-center pointer-events-none" style="display:none">
+        <span class="text-white opacity-50">GAME OVER</span>
     </div>
 
     <!-- Game elements -->
-    <div id="ball" class="fixed pointer-events-none" style="width:6px;height:6px;background:#00D4DF;"></div>
+    <div id="ball" class="fixed pointer-events-none ball-blink" style="width:6px;height:6px;background:#00D4DF;"></div>
     <div id="paddle" class="fixed bottom-8 pointer-events-none" style="width:80px;height:3px;background:white;opacity:0.5;"></div>
 
     <script>
@@ -120,18 +120,24 @@
         function render(rows) {
             // Music
             document.getElementById('music').innerHTML = rows.filter(r => r.Music).map(r =>
-                r.Music_URL ? `<a href="${r.Music_URL}" target="_blank" class="text-[#808080]"><span class="cd">💿</span> ${r.Music}</a>` : r.Music
+                r.Music_URL ? `<a href="${r.Music_URL}" target="_blank" class="text-[#808080] inline-flex items-center gap-1"><span class="cd">💿</span><span>${r.Music}</span></a>` : r.Music
             ).join('<br>');
 
             // Now
-            document.getElementById('now').innerHTML = rows.filter(r => r.Now).map(r =>
-                `<span>${r.Now} <span class="text-[#808080]">${r.Now_Role || ''}</span></span>`
-            ).join('');
+            document.getElementById('now').innerHTML = rows.filter(r => r.Now).map(r => {
+                const name = r.Now_Role_Link
+                    ? `<a href="${r.Now_Role_Link}" target="_blank">${r.Now}</a>`
+                    : r.Now;
+                return `<span>${name} <span class="text-[#808080]">${r.Now_Role || ''}</span></span>`;
+            }).join('');
 
             // Past
-            document.getElementById('past').innerHTML = rows.filter(r => r.Past).map(r =>
-                `<span>${r.Past} <span class="text-[#808080]">${r.Past_Role || ''}</span></span>`
-            ).join('');
+            document.getElementById('past').innerHTML = rows.filter(r => r.Past).map(r => {
+                const name = r.Past_Role_Link
+                    ? `<a href="${r.Past_Role_Link}" target="_blank">${r.Past}</a>`
+                    : r.Past;
+                return `<span>${name} <span class="text-[#808080]">${r.Past_Role || ''}</span></span>`;
+            }).join('');
 
             // Press
             document.getElementById('press').innerHTML = rows.filter(r => r.Press).map(r =>
@@ -174,19 +180,24 @@
         const workPopup = document.getElementById('workPopup');
         const workClose = document.getElementById('workClose');
 
+        const marquee = document.querySelector('.marquee');
+
         workBtn.addEventListener('click', () => {
-            workPopup.classList.toggle('hidden');
+            const isOpen = workPopup.style.display !== 'none';
+            workPopup.style.display = isOpen ? 'none' : 'flex';
+            marquee.style.animationDuration = isOpen ? '10s' : '5s';
         });
 
         workClose.addEventListener('click', () => {
-            workPopup.classList.add('hidden');
+            workPopup.style.display = 'none';
+            marquee.style.animationDuration = '10s';
         });
 
         // ========== BREAKOUT GAME ==========
         const ball = document.getElementById('ball');
         const paddle = document.getElementById('paddle');
         const refreshBtn = document.getElementById('refresh');
-        const startPrompt = document.getElementById('startPrompt');
+        const gameOverEl = document.getElementById('gameOver');
 
         const BALL_COLORS = ['#00D4DF','#BD4BFF','#393DFF','#88FF63','#FFA21F','#FF5A39','#FF7CDE','#FF5275'];
         let ballColorIndex = 0;
@@ -194,6 +205,7 @@
         let gameRunning = false;
         let ballX, ballY, ballDX, ballDY;
         let paddleX = window.innerWidth / 2 - 40;
+        let targetPaddleX = paddleX;
         const ballSpeed = 4;
         let charElements = [];
         let fallingChars = [];
@@ -205,7 +217,15 @@
             ball.style.left = (paddleX + 37) + 'px';
             ball.style.top = (window.innerHeight - 32 - 6 - 14) + 'px';
         }
-        updateLandingPosition();
+
+        // Eased landing loop (runs when game is not active)
+        let landingLoopId = null;
+        function landingLoop() {
+            paddleX += (targetPaddleX - paddleX) * 0.1;
+            updateLandingPosition();
+            if (!gameRunning) landingLoopId = requestAnimationFrame(landingLoop);
+        }
+        landingLoop();
 
         // Split text into individual character spans
         function splitTextIntoChars() {
@@ -290,8 +310,10 @@
         }
 
         function startGame() {
+            cancelAnimationFrame(landingLoopId);
             gameRunning = true;
-            startPrompt.classList.add('hidden');
+            gameOverEl.style.display = 'none';
+            ball.classList.remove('ball-blink');
             refreshBtn.classList.remove('hidden');
             fallingChars = [];
 
@@ -313,7 +335,9 @@
         function stopGame() {
             gameRunning = false;
             refreshBtn.classList.add('hidden');
-            startPrompt.classList.remove('hidden');
+            gameOverEl.style.display = 'none';
+            ball.classList.add('ball-blink');
+            landingLoop();
 
             // Restore original HTML
             const content = document.querySelector('body > div');
@@ -383,8 +407,16 @@
                 }
             });
 
+            // Check if all characters have fallen
+            if (charElements.length > 0 && [...charElements].every(el => el.dataset.falling === 'true')) {
+                gameOverEl.style.display = 'flex';
+            }
+
             // Update falling characters
             updateFallingChars();
+
+            // Ease paddle toward target (desktop)
+            paddleX += (targetPaddleX - paddleX) * 0.1;
 
             // Update positions
             ball.style.left = ballX + 'px';
@@ -394,20 +426,16 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // Paddle follows mouse (both landing and game states)
+        // Desktop: set target, easing handled by loops
         document.addEventListener('mousemove', (e) => {
-            paddleX = e.clientX - 40;
-            if (!gameRunning) {
-                updateLandingPosition();
-            }
+            targetPaddleX = e.clientX - 40;
         });
 
-        // Touch support
+        // Touch: direct, no easing
         document.addEventListener('touchmove', (e) => {
             paddleX = e.touches[0].clientX - 40;
-            if (!gameRunning) {
-                updateLandingPosition();
-            }
+            targetPaddleX = paddleX;
+            if (!gameRunning) updateLandingPosition();
         });
 
         // Click anywhere to start game (landing state)
