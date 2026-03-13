@@ -64,7 +64,7 @@
         </div>
     </div>
 
-    <button id="refresh" class="fixed bottom-4 left-6 md:bottom-4 md:left-4 text-[30px] cursor-pointer hidden">⟳</button>
+    <button id="refresh" class="fixed bottom-4 right-6 md:bottom-4 md:left-4 md:right-auto text-[30px] cursor-pointer hidden">⟳</button>
 
     <!-- Work Popup -->
     <div id="workPopup" class="fixed top-0 right-0 w-[310px] bg-white text-black p-8 flex-col gap-2" style="display:none">
@@ -105,7 +105,7 @@
 
     <!-- Game elements -->
     <div id="ball" class="fixed pointer-events-none ball-blink" style="width:6px;height:6px;background:#00D4DF;"></div>
-    <div id="paddle" class="fixed bottom-[62px] md:bottom-8 pointer-events-none" style="width:80px;height:3px;background:white;opacity:0.5;"></div>
+    <div id="paddle" class="fixed bottom-[52px] md:bottom-8 pointer-events-none" style="width:80px;height:3px;background:white;opacity:0.5;"></div>
 
     <script>
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQIXomht2WJYoDI6jozjeGsoIROOUdRDZ1drTClymzLfb-S9WUReyObnVMTL9jNNU2xru7qY_vDoDUF/pub?output=csv';
@@ -231,7 +231,7 @@
         let originalHTML = '';
 
         function getPaddleBottomOffset() {
-            return window.matchMedia('(max-width: 767px)').matches ? 62 : 32;
+            return window.matchMedia('(max-width: 767px)').matches ? 52 : 32;
         }
 
         // Landing state: paddle + ball visible, following mouse
