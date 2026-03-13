@@ -27,6 +27,8 @@
         }
         #bouncer {
             position: fixed;
+            top: 0;
+            left: 0;
             width: 200px;
             line-height: 120%;
             white-space: normal;
@@ -34,6 +36,9 @@
             text-align: center;
             pointer-events: none;
             transition: color 0.3s ease;
+            will-change: transform;
+            backface-visibility: hidden;
+            -webkit-font-smoothing: antialiased;
         }
     </style>
 </head>
@@ -133,6 +138,10 @@
             bouncer.textContent = sentences[sentenceIndex % sentences.length];
         }
 
+        function setBouncerPosition(nextX, nextY) {
+            bouncer.style.transform = `translate3d(${nextX}px, ${nextY}px, 0)`;
+        }
+
         function bounce() {
             const color = COLORS[colorIndex % COLORS.length];
             document.body.style.backgroundColor = color;
@@ -167,8 +176,7 @@
 
             if (bounced) bounce();
 
-            bouncer.style.left = Math.round(x) + 'px';
-            bouncer.style.top = Math.round(y) + 'px';
+            setBouncerPosition(x, y);
 
             animId = requestAnimationFrame(animate);
         }
@@ -210,16 +218,14 @@
                 setSentence();
 
                 // Randomize starting position
-                bouncer.style.left = '0px';
-                bouncer.style.top = '0px';
+                setBouncerPosition(0, 0);
                 bouncer.style.visibility = 'hidden';
 
                 requestAnimationFrame(() => {
                     const rect = bouncer.getBoundingClientRect();
                     x = Math.random() * (window.innerWidth - rect.width);
                     y = Math.random() * (window.innerHeight - rect.height);
-                    bouncer.style.left = x + 'px';
-                    bouncer.style.top = y + 'px';
+                    setBouncerPosition(x, y);
                     bouncer.style.visibility = 'visible';
                     animate();
                 });
