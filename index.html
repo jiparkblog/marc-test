@@ -3,6 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Marc Hill">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Marc Hill">
+    <meta property="og:image" content="Favicon.png">
+    <meta property="og:image:alt" content="Marc Hill favicon">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Marc Hill">
+    <meta name="twitter:image" content="Favicon.png">
+    <link rel="icon" type="image/png" href="Favicon.png">
+    <link rel="apple-touch-icon" href="Favicon.png">
     <title>Marc Hill</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -64,7 +74,7 @@
         <div id="workText" class="leading-tight border-b border-[#E3E3E3] pb-[60px]"></div>
          <div class="flex flex-col gap-8">
             <span class="pt-[14px]">Clients</span>
-            <div class="overflow-hidden">
+            <div class="marquee-frame">
                 <div class="marquee flex gap-8">
                     <img src="logo_1.svg" alt="logo" class="h-4">
                     <img src="logo_2.svg" alt="logo" class="h-4">
@@ -74,6 +84,14 @@
                     <img src="logo_6.svg" alt="logo" class="h-4">
                     <img src="logo_7.svg" alt="logo" class="h-4">
                     <img src="logo_8.svg" alt="logo" class="h-4">
+                    <img src="logo_1.svg" alt="" aria-hidden="true" class="h-4">
+                    <img src="logo_2.svg" alt="" aria-hidden="true" class="h-4">
+                    <img src="logo_3.svg" alt="" aria-hidden="true" class="h-4">
+                    <img src="logo_4.svg" alt="" aria-hidden="true" class="h-4">
+                    <img src="logo_5.svg" alt="" aria-hidden="true" class="h-4">
+                    <img src="logo_6.svg" alt="" aria-hidden="true" class="h-4">
+                    <img src="logo_7.svg" alt="" aria-hidden="true" class="h-4">
+                    <img src="logo_8.svg" alt="" aria-hidden="true" class="h-4">
                 </div>
             </div>
         </div>
@@ -87,7 +105,7 @@
 
     <!-- Game elements -->
     <div id="ball" class="fixed pointer-events-none ball-blink" style="width:6px;height:6px;background:#00D4DF;"></div>
-    <div id="paddle" class="fixed bottom-8 pointer-events-none" style="width:80px;height:3px;background:white;opacity:0.5;"></div>
+    <div id="paddle" class="fixed bottom-[62px] md:bottom-8 pointer-events-none" style="width:80px;height:3px;background:white;opacity:0.5;"></div>
 
     <script>
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQIXomht2WJYoDI6jozjeGsoIROOUdRDZ1drTClymzLfb-S9WUReyObnVMTL9jNNU2xru7qY_vDoDUF/pub?output=csv';
@@ -186,12 +204,12 @@
         workBtn.addEventListener('click', () => {
             const isOpen = workPopup.style.display !== 'none';
             workPopup.style.display = isOpen ? 'none' : 'flex';
-            marquee.style.animationDuration = isOpen ? '10s' : '5s';
+            marquee.style.animationDuration = isOpen ? '34s' : '24s';
         });
 
         workClose.addEventListener('click', () => {
             workPopup.style.display = 'none';
-            marquee.style.animationDuration = '10s';
+            marquee.style.animationDuration = '34s';
         });
 
         // ========== BREAKOUT GAME ==========
@@ -212,11 +230,16 @@
         let fallingChars = [];
         let originalHTML = '';
 
+        function getPaddleBottomOffset() {
+            return window.matchMedia('(max-width: 767px)').matches ? 62 : 32;
+        }
+
         // Landing state: paddle + ball visible, following mouse
         function updateLandingPosition() {
+            const paddleBottomOffset = getPaddleBottomOffset();
             paddle.style.left = paddleX + 'px';
             ball.style.left = (paddleX + 37) + 'px';
-            ball.style.top = (window.innerHeight - 32 - 6 - 14) + 'px';
+            ball.style.top = (window.innerHeight - paddleBottomOffset - 6 - 14) + 'px';
         }
 
         // Eased landing loop (runs when game is not active)
@@ -321,8 +344,9 @@
             splitTextIntoChars();
 
             // Launch ball from paddle position
+            const paddleBottomOffset = getPaddleBottomOffset();
             ballX = paddleX + 37;
-            ballY = window.innerHeight - 32 - 6;
+            ballY = window.innerHeight - paddleBottomOffset - 6;
             const angle = Math.random() * Math.PI - Math.PI / 2;
             ballDX = Math.sin(angle) * ballSpeed;
             ballDY = -Math.abs(Math.cos(angle) * ballSpeed);

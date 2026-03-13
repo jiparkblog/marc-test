@@ -53,12 +53,39 @@ body {
 }
 
 .marquee {
-    animation: marquee 10s linear infinite;
+    width: max-content;
+    animation: marquee 34s linear infinite;
 }
 
 @keyframes marquee {
     from { transform: translateX(0); }
     to { transform: translateX(-50%); }
+}
+
+.marquee-frame {
+    position: relative;
+    overflow: hidden;
+}
+
+.marquee-frame::before,
+.marquee-frame::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 24px;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.marquee-frame::before {
+    left: 0;
+    background: linear-gradient(to right, #fff 0%, rgba(255, 255, 255, 0) 100%);
+}
+
+.marquee-frame::after {
+    right: 0;
+    background: linear-gradient(to left, #fff 0%, rgba(255, 255, 255, 0) 100%);
 }
 
 

@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="Favicon.png">
+    <link rel="apple-touch-icon" href="Favicon.png">
     <title>About</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -56,7 +58,7 @@
         <div id="workText" class="leading-tight border-b border-[#E3E3E3] pb-[60px]"></div>
          <div class="flex flex-col gap-8">
             <span class="pt-[14px]">Clients</span>
-            <div class="overflow-hidden">
+            <div class="marquee-frame">
                 <div class="marquee flex gap-8">
                     <img src="logo_1.svg" alt="logo" class="h-4">
                     <img src="logo_2.svg" alt="logo" class="h-4">
@@ -89,7 +91,7 @@
         // DVD bounce state
         const bouncer = document.getElementById('bouncer');
         let x = 100, y = 200;
-        let dx = 1.2, dy = 1.2;
+        let dx = 0.9, dy = 0.9;
         let animId;
 
         function parseCSV(text) {
@@ -165,8 +167,8 @@
 
             if (bounced) bounce();
 
-            bouncer.style.left = x + 'px';
-            bouncer.style.top = y + 'px';
+            bouncer.style.left = Math.round(x) + 'px';
+            bouncer.style.top = Math.round(y) + 'px';
 
             animId = requestAnimationFrame(animate);
         }
