@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Marc Hill">
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="Marc Hill">
-    <meta property="og:image" content="Favicon.png">
-    <meta property="og:image:alt" content="Marc Hill favicon">
+    <meta name="description" content="Marc Hill | Design Director">
+    <meta property="og:type" content="Marc Hill | Design Director">
+    <meta property="og:title" content="Marc Hill | Design Director">
+    <meta property="og:image" content="marc.png">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Marc Hill">
-    <meta name="twitter:image" content="Favicon.png">
+    <meta name="twitter:title" content="Marc Hill | Design Director">
+    <meta name="twitter:image" content="marc.png">
     <link rel="icon" type="image/png" href="Favicon.png">
     <link rel="apple-touch-icon" href="Favicon.png">
     <title>Marc Hill</title>
@@ -100,7 +99,7 @@
     <!-- Game elements -->
     <!-- Click to start -->
     <div id="gameOver" class="fixed inset-0 flex items-center justify-center pointer-events-none" style="display:none">
-        <span class="text-white opacity-50">GAME OVER</span>
+        <p id="jackpotMessage" class="jackpot-message"></p>
     </div>
 
     <!-- Game elements -->
@@ -217,9 +216,19 @@
         const paddle = document.getElementById('paddle');
         const refreshBtn = document.getElementById('refresh');
         const gameOverEl = document.getElementById('gameOver');
+        const jackpotMessageEl = document.getElementById('jackpotMessage');
 
         const BALL_COLORS = ['#00D4DF','#BD4BFF','#393DFF','#88FF63','#FFA21F','#FF5A39','#FF7CDE','#FF5275'];
+        const JACKPOT_MAIN_TEXT = 'You win nothing!';
+        const JACKPOT_TARGET_TEXT = '°✧°¯\\_(ツ)_/¯°✧°°';
+        const JACKPOT_NEON_COLORS = ['#00D4DF', '#B500FF', '#0000FF', '#00FF00', '#FFAA00', '#00D4DF'];
+        const JACKPOT_TYPE_SPEED_MS = 65;
+        const JACKPOT_SCRAMBLE_DELAY_MS = 4200;
+        const JACKPOT_REVEAL_STAGGER_MS = 65;
+        const JACKPOT_FLICKER_SPEED_MS = 65;
         let ballColorIndex = 0;
+        let hasShownJackpot = false;
+        let jackpotTimers = [];
 
         let gameRunning = false;
         let ballX, ballY, ballDX, ballDY;
@@ -232,6 +241,101 @@
 
         function getPaddleBottomOffset() {
             return window.matchMedia('(max-width: 767px)').matches ? 52 : 32;
+        }
+
+        function clearJackpotTimers() {
+            jackpotTimers.forEach(timer => {
+                if (timer.type === 'interval') clearInterval(timer.id);
+                if (timer.type === 'timeout') clearTimeout(timer.id);
+            });
+            jackpotTimers = [];
+        }
+
+        function trackTimeout(callback, delay) {
+            const id = setTimeout(callback, delay);
+            jackpotTimers.push({ type: 'timeout', id });
+            return id;
+        }
+
+        function trackInterval(callback, delay) {
+            const id = setInterval(callback, delay);
+            jackpotTimers.push({ type: 'interval', id });
+            return id;
+        }
+
+        function makeJackpotChar(char, color, flashing) {
+            const span = document.createElement('span');
+            span.className = `jackpot-char${flashing ? ' jackpot-char--flash' : ''}`;
+            span.textContent = char === ' ' ? '\u00A0' : char;
+            if (color) span.style.setProperty('--jackpot-color', color);
+            return span;
+        }
+
+        function resetJackpotMessage() {
+            clearJackpotTimers();
+            hasShownJackpot = false;
+            jackpotMessageEl.textContent = '';
+            gameOverEl.style.display = 'none';
+        }
+
+        function startJackpotScramble() {
+            const scrambleChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*?¯\\_/(ツ)°✧';
+            const targetChars = JACKPOT_TARGET_TEXT.split('');
+            jackpotMessageEl.textContent = '';
+
+            const spans = targetChars.map((targetChar, i) => {
+                const color = JACKPOT_NEON_COLORS[i % JACKPOT_NEON_COLORS.length];
+                const initialChar = JACKPOT_MAIN_TEXT[i] || scrambleChars[Math.floor(Math.random() * scrambleChars.length)];
+                const span = makeJackpotChar(initialChar, color, false);
+                jackpotMessageEl.appendChild(span);
+                return { span, targetChar };
+            });
+
+            const indices = Array.from({ length: spans.length }, (_, i) => i);
+            for (let i = indices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [indices[i], indices[j]] = [indices[j], indices[i]];
+            }
+
+            indices.forEach((originalIndex, order) => {
+                const startDelay = order * JACKPOT_REVEAL_STAGGER_MS;
+                trackTimeout(() => {
+                    const flickCount = 1 + Math.floor(Math.random() * 2);
+                    let count = 0;
+                    const flicker = trackInterval(() => {
+                        count++;
+                        if (count <= flickCount) {
+                            spans[originalIndex].span.textContent = scrambleChars[Math.floor(Math.random() * scrambleChars.length)];
+                        } else {
+                            clearInterval(flicker);
+                            spans[originalIndex].span.textContent = spans[originalIndex].targetChar === ' ' ? '\u00A0' : spans[originalIndex].targetChar;
+                            spans[originalIndex].span.classList.add('jackpot-char--resolved');
+                        }
+                    }, JACKPOT_FLICKER_SPEED_MS);
+                }, startDelay);
+            });
+        }
+
+        function startJackpotMessage() {
+            clearJackpotTimers();
+            gameOverEl.style.display = 'flex';
+            jackpotMessageEl.textContent = '';
+
+            let index = 0;
+            const typeInterval = trackInterval(() => {
+                if (index >= JACKPOT_MAIN_TEXT.length) {
+                    return;
+                }
+                const char = JACKPOT_MAIN_TEXT[index];
+                const color = JACKPOT_NEON_COLORS[index % JACKPOT_NEON_COLORS.length];
+                jackpotMessageEl.appendChild(makeJackpotChar(char, color, true));
+                index++;
+                if (index >= JACKPOT_MAIN_TEXT.length) {
+                    clearInterval(typeInterval);
+                }
+            }, JACKPOT_TYPE_SPEED_MS);
+
+            trackTimeout(startJackpotScramble, JACKPOT_SCRAMBLE_DELAY_MS);
         }
 
         // Landing state: paddle + ball visible, following mouse
@@ -336,7 +440,7 @@
         function startGame() {
             cancelAnimationFrame(landingLoopId);
             gameRunning = true;
-            gameOverEl.style.display = 'none';
+            resetJackpotMessage();
             ball.classList.remove('ball-blink');
             refreshBtn.classList.remove('hidden');
             fallingChars = [];
@@ -360,7 +464,7 @@
         function stopGame() {
             gameRunning = false;
             refreshBtn.classList.add('hidden');
-            gameOverEl.style.display = 'none';
+            resetJackpotMessage();
             ball.classList.add('ball-blink');
             landingLoop();
 
@@ -433,8 +537,9 @@
             });
 
             // Check if all characters have fallen
-            if (charElements.length > 0 && [...charElements].every(el => el.dataset.falling === 'true')) {
-                gameOverEl.style.display = 'flex';
+            if (!hasShownJackpot && charElements.length > 0 && [...charElements].every(el => el.dataset.falling === 'true')) {
+                hasShownJackpot = true;
+                startJackpotMessage();
             }
 
             // Update falling characters

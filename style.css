@@ -94,4 +94,41 @@ body {
     background: linear-gradient(to left, #fff 0%, rgba(255, 255, 255, 0) 100%);
 }
 
+.jackpot-message {
+    font-size: 15px;
+    line-height: 1.2;
+    letter-spacing: 0.15px;
+    white-space: nowrap;
+    color: #ffffff;
+    opacity: 1;
+}
+
+.jackpot-char {
+    display: inline-block;
+    color: #ffffff;
+    text-shadow: none;
+    transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+.jackpot-char--flash {
+    color: var(--jackpot-color, #00d4df);
+    animation: jackpotFlash 0.45s linear infinite;
+}
+
+.jackpot-char--resolved {
+    color: #ffffff;
+    text-shadow: none;
+}
+
+@keyframes jackpotFlash {
+    0% {
+        color: var(--jackpot-color, #00d4df);
+        text-shadow: none;
+    }
+    100% {
+        color: var(--jackpot-color, #00d4df);
+        text-shadow: none;
+    }
+}
+
 
